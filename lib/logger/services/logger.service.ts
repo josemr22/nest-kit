@@ -2,7 +2,6 @@ import {
   ConsoleLogger,
   Inject,
   Injectable,
-  LogLevel,
   Scope,
 } from '@nestjs/common';
 import { KnownSeverityLevel, TelemetryClient } from 'applicationinsights';
@@ -220,11 +219,7 @@ export class LoggerService extends ConsoleLogger {
     this.critical(message, stackOrMetadata as any, context);
   }
 
-  setLogLevels(levels: LogLevel[]): void {
-    super.setLogLevels(levels);
-  }
-
-  trackEvent(name: string, properties?: LogMetadata, measurements?: any): void {
+  trackEvent(name: string, properties?: LogMetadata, measurements?: Record<string, number>): void {
     this.appInsights.trackEvent({
       name,
       properties: this.buildProperties(properties),

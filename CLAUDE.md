@@ -4,19 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is **@lightsoft-pe/nest-kit**, a shared NestJS utility library providing reusable modules for Lightsoft's NestJS projects. It integrates with Azure services (Application Insights, Blob Storage) and exports common helpers and error constants.
+This is **@lightsoft-pe/nest-kit**, a shared NestJS utility library providing reusable modules for Lightsoft's NestJS projects. It integrates with Azure services (Application Insights, Blob Storage) and exports common helpers and error infrastructure.
 
 ## Commands
 
 ```bash
-# Build (compiles TypeScript to dist/)
-npm run build
-
-# Build runs automatically on install/publish
-npm run prepare
+npm run build        # Compiles TypeScript to dist/
+npm test             # Run Jest tests
+npm run test:watch   # Run tests in watch mode
 ```
 
-There are no test or lint scripts configured — only `build` and `prepare`.
+Tests live in `tests/` (excluded from the build tsconfig). A separate `tsconfig.test.json` is used by Jest via `ts-jest`.
 
 ## Architecture
 
@@ -24,11 +22,21 @@ Source lives in [lib/](lib/) (not `src/`). The [lib/index.ts](lib/index.ts) is t
 
 ### Modules
 
-Both modules follow the **`forRoot()` dynamic module pattern** and are globally scoped:
+Both modules are `@Global()` and support both `forRoot()` and `forRootAsync()`. The async variant accepts `{ imports, inject, useFactory }` to integrate with `ConfigService`.
 
-- **[LoggerModule](lib/logger/logger.module.ts)** — wraps Azure Application Insights. Requires `appInsightConnectionString`. Exports `LoggerService`, which extends NestJS `ConsoleLogger` and has transient scope (new instance per injection). Tracks traces/exceptions to App Insights with severity mapping.
+Injection tokens are exported Symbols (never plain strings):
+- `LOGGER_CLIENT`, `LOGGER_MODULE_OPTIONS` — from [lib/logger/logger.constants.ts](lib/logger/logger.constants.ts)
+- `STORAGE_CLIENT`, `STORAGE_MODULE_OPTIONS` — from [lib/storage/storage.constants.ts](lib/storage/storage.constants.ts)
 
-- **[StorageModule](lib/storage/storage.module.ts)** — wraps Azure Blob Storage. Requires `storageAccountName` and `storageAccountKey`. Provides a `StorageClient` (BlobServiceClient) token internally. `StorageService` uses `StringsHelper` to auto-generate lowercase snake_case blob names with a random suffix.
+**[LoggerModule](lib/logger/logger.module.ts)** — wraps Azure Application Insights. `LoggerService` extends `ConsoleLogger` with `Scope.TRANSIENT`. Uses `AsyncLocalStorage` for request context propagation (no `@Inject(REQUEST)` — avoids scope cascade and works in non-HTTP contexts). Call `LoggerService.setRequestContext(ctx, callback)` from a middleware or interceptor.
+
+**[StorageModule](lib/storage/storage.module.ts)** — wraps Azure Blob Storage. `StorageService` auto-generates unique blob names when none is provided.
+
+### Errors
+
+[lib/errors/](lib/errors/) provides infrastructure, not domain codes:
+- `AppException` — base class extending `HttpException`, accepts `{ code, message }` + optional `HttpStatus`
+- `HttpExceptionFilter` — generic `@Catch(HttpException)` filter that adds `statusCode` and `timestamp`
 
 ### Helpers
 
@@ -37,14 +45,10 @@ Located in [lib/helpers/](lib/helpers/):
 - `MapperHelper` — `cleanCosmosDocument` removes Azure Cosmos DB `_`-prefixed system properties
 - `AsyncHelper` — `wait(ms)` promise-based delay
 
-### Error Constants
-
-[lib/errors/app-errors.contants.ts](lib/errors/app-errors.contants.ts) exports `ERROR_CODES` enum and `ERRORS` object with code/message pairs.
-
 ## Build Output
 
-TypeScript compiles to `dist/` (CommonJS, ES2022 target, with `.d.ts` declarations and source maps). The `tsconfig.json` only includes `lib/**/*` — the `sample/` directory is excluded from compilation.
+TypeScript compiles to `dist/` (CommonJS, ES2022 target, with `.d.ts` declarations and source maps). The `tsconfig.json` only includes `lib/**/*`.
 
 ## Publishing
 
-Published to npm as a public package. Only `dist/` is included in the published package (via `"files": ["dist"]` in package.json).
+Published to npm as a public package. Only `dist/` is included (via `"files": ["dist"]`). Azure SDKs (`@azure/storage-blob`, `applicationinsights`) are optional `peerDependencies`.
