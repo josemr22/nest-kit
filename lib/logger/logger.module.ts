@@ -1,4 +1,4 @@
-import { DynamicModule, Module } from '@nestjs/common';
+import { DynamicModule, Global, Module } from '@nestjs/common';
 import * as appInsights from 'applicationinsights';
 import { LoggerService } from './services/logger.service';
 
@@ -6,6 +6,7 @@ export interface LoggerModuleOptions {
   appInsightConnectionString: string;
 }
 
+@Global()
 @Module({})
 export class LoggerModule {
   static forRoot(options: LoggerModuleOptions): DynamicModule {
