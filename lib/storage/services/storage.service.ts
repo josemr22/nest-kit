@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
-import { StringsHelper } from '../../helpers/strings.helper';
+import { toLowerSnakeCase } from '../../helpers/strings';
 import { STORAGE_CLIENT } from '../storage.constants';
 
 export interface UploadResult {
@@ -118,7 +118,7 @@ export class StorageService {
   }
 
   private generateBlobName(base: string, ext?: string): string {
-    const safeName = StringsHelper.toLowerSnakeCase(base);
+    const safeName = toLowerSnakeCase(base);
     const id = randomUUID().replace(/-/g, '');
     return ext ? `${safeName}_${id}.${ext}` : `${safeName}_${id}`;
   }
