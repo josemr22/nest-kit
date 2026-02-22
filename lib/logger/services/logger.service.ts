@@ -8,16 +8,30 @@ import { KnownSeverityLevel, TelemetryClient } from 'applicationinsights';
 import { AsyncLocalStorage } from 'async_hooks';
 import { LOGGER_CLIENT } from '../logger.constants';
 
+/** Arbitrary key-value metadata attached to a log entry or telemetry event. */
 export interface LogMetadata {
   [key: string]: any;
 }
 
+/**
+ * HTTP request context propagated via AsyncLocalStorage.
+ * Set once in a middleware or interceptor via `LoggerService.setRequestContext`;
+ * all subsequent log calls within that async scope will include these fields automatically.
+ *
+ * Supports arbitrary extra fields via the index signature.
+ */
 export interface RequestContext {
+  /** Unique request identifier for cross-service correlation. */
   requestId?: string;
+  /** Authenticated user ID. */
   userId?: string;
+  /** HTTP method (GET, POST, …). */
   method?: string;
+  /** Request URL. */
   url?: string;
+  /** Client IP address. */
   ip?: string;
+  /** User-Agent header value. */
   userAgent?: string;
   [key: string]: any;
 }
@@ -34,6 +48,20 @@ export class LoggerService extends ConsoleLogger {
     super();
   }
 
+  /**
+   * Runs `callback` within an async context that carries the given `RequestContext`.
+   * Any `LoggerService` call made inside `callback` (or any function it calls)
+   * will automatically include the context fields in Application Insights properties.
+   *
+   * Typically called once per request in a NestJS middleware or interceptor.
+   *
+   * @example
+   * // In a middleware:
+   * LoggerService.setRequestContext(
+   *   { requestId: req.id, userId: req.user?.id, method: req.method, url: req.url },
+   *   () => next(),
+   * );
+   */
   static setRequestContext(context: RequestContext, callback: () => void) {
     LoggerService.asyncLocalStorage.run(context, callback);
   }
@@ -83,6 +111,7 @@ export class LoggerService extends ConsoleLogger {
     return new Error(this.formatLogMessage(error));
   }
 
+  /** Logs an informational message. Sends a `trackTrace` with severity Information. */
   log(message: any, metadata?: LogMetadata): void;
   log(message: any, context?: string): void;
   log(message: any, metadataOrContext?: LogMetadata | string): void {
@@ -102,6 +131,7 @@ export class LoggerService extends ConsoleLogger {
     super.log(message, context || this.context);
   }
 
+  /** Logs an error. Sends a `trackException` with severity Error. */
   error(message: any, metadata?: LogMetadata): void;
   error(message: any, stackOrContext?: string): void;
   error(message: any, stack?: string, context?: string, metadata?: LogMetadata): void;
@@ -128,6 +158,7 @@ export class LoggerService extends ConsoleLogger {
     super.error(message, stack, context || this.context);
   }
 
+  /** Logs a critical error. Sends a `trackException` with severity Critical. */
   critical(message: any, metadata?: LogMetadata): void;
   critical(message: any, stack?: string, context?: string): void;
   critical(
@@ -152,6 +183,7 @@ export class LoggerService extends ConsoleLogger {
     super.error(message, stack, context || this.context);
   }
 
+  /** Logs a warning. Sends a `trackTrace` with severity Warning. */
   warn(message: any, metadata?: LogMetadata): void;
   warn(message: any, context?: string): void;
   warn(message: any, metadataOrContext?: LogMetadata | string): void {
@@ -171,6 +203,7 @@ export class LoggerService extends ConsoleLogger {
     super.warn(message, context || this.context);
   }
 
+  /** Logs a debug message. Sends a `trackTrace` with severity Verbose. */
   debug(message: any, metadata?: LogMetadata): void;
   debug(message: any, context?: string): void;
   debug(message: any, metadataOrContext?: LogMetadata | string): void {
@@ -190,6 +223,7 @@ export class LoggerService extends ConsoleLogger {
     super.debug(message, context || this.context);
   }
 
+  /** Logs a verbose message. Sends a `trackTrace` with severity Verbose. */
   verbose(message: any, metadata?: LogMetadata): void;
   verbose(message: any, context?: string): void;
   verbose(message: any, metadataOrContext?: LogMetadata | string): void {
@@ -209,6 +243,7 @@ export class LoggerService extends ConsoleLogger {
     super.verbose(message, context || this.context);
   }
 
+  /** Alias for `critical()`. */
   fatal(message: any, metadata?: LogMetadata): void;
   fatal(message: any, stack?: string, context?: string): void;
   fatal(
@@ -219,6 +254,12 @@ export class LoggerService extends ConsoleLogger {
     this.critical(message, stackOrMetadata as any, context);
   }
 
+  /**
+   * Tracks a custom business event in Application Insights.
+   * @param name - Event name (e.g. `'UserRegistered'`).
+   * @param properties - Arbitrary string/number/boolean key-value pairs.
+   * @param measurements - Numeric measurements associated with the event (e.g. `{ duration: 120 }`).
+   */
   trackEvent(name: string, properties?: LogMetadata, measurements?: Record<string, number>): void {
     this.appInsights.trackEvent({
       name,
@@ -227,6 +268,11 @@ export class LoggerService extends ConsoleLogger {
     });
   }
 
+  /**
+   * Tracks a custom numeric metric in Application Insights.
+   * @param name - Metric name (e.g. `'ResponseTime'`).
+   * @param value - Numeric value.
+   */
   trackMetric(name: string, value: number, properties?: LogMetadata): void {
     this.appInsights.trackMetric({
       name,
@@ -235,6 +281,15 @@ export class LoggerService extends ConsoleLogger {
     });
   }
 
+  /**
+   * Tracks an outgoing dependency call (HTTP, DB, cache, etc.) in Application Insights.
+   * @param name - Dependency name (e.g. `'UserService'`, `'Redis'`).
+   * @param duration - Call duration in milliseconds.
+   * @param success - Whether the call succeeded.
+   * @param resultCode - HTTP status or error code. Defaults to `'200'` / `'500'`.
+   * @param dependencyType - Type label (e.g. `'HTTP'`, `'SQL'`, `'Cache'`).
+   * @param data - Command or URL that was called (e.g. `'GET /users'`, `'SELECT * FROM users'`).
+   */
   trackDependency(
     name: string,
     duration: number,

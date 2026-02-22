@@ -3,10 +3,13 @@ import { DynamicModule, Global, Module, ModuleMetadata } from '@nestjs/common';
 import { SERVICE_BUS_CLIENT, SERVICE_BUS_MODULE_OPTIONS } from './service-bus.constants';
 import { ServiceBusService } from './services/service-bus.service';
 
+/** Configuration options for ServiceBusModule. */
 export interface ServiceBusModuleOptions {
+  /** Azure Service Bus connection string. */
   connectionString: string;
 }
 
+/** Async configuration options for ServiceBusModule, compatible with ConfigService. */
 export interface ServiceBusModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   inject?: any[];
   useFactory: (...args: any[]) => ServiceBusModuleOptions | Promise<ServiceBusModuleOptions>;

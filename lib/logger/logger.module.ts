@@ -3,10 +3,13 @@ import * as appInsights from 'applicationinsights';
 import { LOGGER_CLIENT, LOGGER_MODULE_OPTIONS } from './logger.constants';
 import { LoggerService } from './services/logger.service';
 
+/** Configuration options for LoggerModule. */
 export interface LoggerModuleOptions {
+  /** Azure Application Insights connection string. */
   appInsightConnectionString: string;
 }
 
+/** Async configuration options for LoggerModule, compatible with ConfigService. */
 export interface LoggerModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   inject?: any[];
   useFactory: (...args: any[]) => LoggerModuleOptions | Promise<LoggerModuleOptions>;

@@ -3,10 +3,22 @@ import { DynamicModule, Global, Module, ModuleMetadata } from '@nestjs/common';
 import { STORAGE_CLIENT, STORAGE_MODULE_OPTIONS } from './storage.constants';
 import { StorageService } from './services/storage.service';
 
+/**
+ * Configuration options for StorageModule.
+ * Accepts either a connection string or account name + key.
+ *
+ * @example
+ * // Connection string (recommended for dev/CI)
+ * { connectionString: 'DefaultEndpointsProtocol=https;AccountName=...' }
+ *
+ * // Account name + key
+ * { storageAccountName: 'myaccount', storageAccountKey: 'base64key==' }
+ */
 export type StorageModuleOptions =
   | { connectionString: string }
   | { storageAccountName: string; storageAccountKey: string };
 
+/** Async configuration options for StorageModule, compatible with ConfigService. */
 export interface StorageModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   inject?: any[];
   useFactory: (...args: any[]) => StorageModuleOptions | Promise<StorageModuleOptions>;
