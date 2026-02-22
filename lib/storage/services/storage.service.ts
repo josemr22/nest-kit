@@ -1,12 +1,13 @@
 import { BlobServiceClient } from '@azure/storage-blob';
 import { Inject, Injectable } from '@nestjs/common';
 import { StringsHelper } from '../../helpers/strings.helper';
+import { STORAGE_CLIENT } from '../storage.constants';
 
 @Injectable()
 export class StorageService {
 
     constructor(
-        @Inject('StorageClient') private readonly storageClient: BlobServiceClient,
+        @Inject(STORAGE_CLIENT) private readonly storageClient: BlobServiceClient,
     ) { }
 
     async uploadBuffer({
@@ -19,7 +20,8 @@ export class StorageService {
         blobName?: string;
     }) {
         const containerClient = this.storageClient.getContainerClient(containerName);
-        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+        const resolvedBlobName = blobName ?? this.getUniqueFileName('blob');
+        const blockBlobClient = containerClient.getBlockBlobClient(resolvedBlobName);
         await blockBlobClient.uploadData(buffer);
         return {
             url: blockBlobClient.url

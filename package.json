@@ -10,9 +10,17 @@
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0"
+    "@nestjs/core": "^10.0.0",
+    "@azure/storage-blob": "^12.0.0",
+    "applicationinsights": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@azure/storage-blob": { "optional": true },
+    "applicationinsights": { "optional": true }
   },
   "devDependencies": {
+    "@azure/storage-blob": "^12.29.1",
+    "applicationinsights": "^3.12.0",
     "@types/multer": "^2.0.0"
   },
   "keywords": [
@@ -23,10 +31,6 @@
   ],
   "author": "José Luis Martinez <josemr.99@outlook.com>",
   "license": "ISC",
-  "dependencies": {
-    "@azure/storage-blob": "^12.29.1",
-    "applicationinsights": "^3.12.0"
-  },
   "files": [
     "dist/**/*"
   ],

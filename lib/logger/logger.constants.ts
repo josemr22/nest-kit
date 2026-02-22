@@ -1,0 +1,2 @@
+export const LOGGER_CLIENT = Symbol('LOGGER_CLIENT');
+export const LOGGER_MODULE_OPTIONS = Symbol('LOGGER_MODULE_OPTIONS');
