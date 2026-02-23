@@ -1,7 +1,7 @@
 {
   "name": "@lightsoft-pe/nest-kit",
   "version": "0.2.0",
-  "description": "Módulo común para proyectos NestJS de Lightsoft.",
+  "description": "Módulo común para proyectos NestJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

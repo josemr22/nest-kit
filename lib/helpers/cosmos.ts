@@ -9,7 +9,7 @@
  * const clean = stripCosmosFields(doc, ['ttl']);
  * // Removes _rid, _self, _etag, _attachments, _ts, and ttl
  */
-export function stripCosmosFields<T extends Record<string, unknown>>(
+export function stripCosmosFields<T extends object>(
   document: T,
   extraKeys: string[] = [],
 ): Partial<T> {
