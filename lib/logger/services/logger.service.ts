@@ -82,6 +82,14 @@ export class LoggerService extends ConsoleLogger {
     };
   }
 
+  private trackSafely(fn: () => void): void {
+    try {
+      fn();
+    } catch (err) {
+      console.warn('[nest-kit] Telemetry export failed (ignored):', err);
+    }
+  }
+
   private formatLogMessage(message: any): string {
     if (typeof message === 'string') {
       return message;
@@ -122,11 +130,11 @@ export class LoggerService extends ConsoleLogger {
     const formattedMessage = this.formatLogMessage(message);
     const properties = this.buildProperties(metadata);
 
-    this.appInsights.trackTrace({
+    this.trackSafely(() => this.appInsights.trackTrace({
       message: formattedMessage,
       properties,
       severity: KnownSeverityLevel.Information,
-    });
+    }));
 
     super.log(message, context || this.context);
   }
@@ -149,11 +157,11 @@ export class LoggerService extends ConsoleLogger {
     const error = this.extractError(message);
     const properties = this.buildProperties(actualMetadata);
 
-    this.appInsights.trackException({
+    this.trackSafely(() => this.appInsights.trackException({
       exception: error,
       properties,
       severity: KnownSeverityLevel.Error,
-    });
+    }));
 
     super.error(message, stack, context || this.context);
   }
@@ -174,11 +182,11 @@ export class LoggerService extends ConsoleLogger {
     const error = this.extractError(message);
     const properties = this.buildProperties(metadata);
 
-    this.appInsights.trackException({
+    this.trackSafely(() => this.appInsights.trackException({
       exception: error,
       properties,
       severity: KnownSeverityLevel.Critical,
-    });
+    }));
 
     super.error(message, stack, context || this.context);
   }
@@ -194,11 +202,11 @@ export class LoggerService extends ConsoleLogger {
     const formattedMessage = this.formatLogMessage(message);
     const properties = this.buildProperties(metadata);
 
-    this.appInsights.trackTrace({
+    this.trackSafely(() => this.appInsights.trackTrace({
       message: formattedMessage,
       properties,
       severity: KnownSeverityLevel.Warning,
-    });
+    }));
 
     super.warn(message, context || this.context);
   }
@@ -214,11 +222,11 @@ export class LoggerService extends ConsoleLogger {
     const formattedMessage = this.formatLogMessage(message);
     const properties = this.buildProperties(metadata);
 
-    this.appInsights.trackTrace({
+    this.trackSafely(() => this.appInsights.trackTrace({
       message: formattedMessage,
       properties,
       severity: KnownSeverityLevel.Verbose,
-    });
+    }));
 
     super.debug(message, context || this.context);
   }
@@ -234,11 +242,11 @@ export class LoggerService extends ConsoleLogger {
     const formattedMessage = this.formatLogMessage(message);
     const properties = this.buildProperties(metadata);
 
-    this.appInsights.trackTrace({
+    this.trackSafely(() => this.appInsights.trackTrace({
       message: formattedMessage,
       properties,
       severity: KnownSeverityLevel.Verbose,
-    });
+    }));
 
     super.verbose(message, context || this.context);
   }
@@ -261,11 +269,11 @@ export class LoggerService extends ConsoleLogger {
    * @param measurements - Numeric measurements associated with the event (e.g. `{ duration: 120 }`).
    */
   trackEvent(name: string, properties?: LogMetadata, measurements?: Record<string, number>): void {
-    this.appInsights.trackEvent({
+    this.trackSafely(() => this.appInsights.trackEvent({
       name,
       properties: this.buildProperties(properties),
       measurements,
-    });
+    }));
   }
 
   /**
@@ -274,11 +282,11 @@ export class LoggerService extends ConsoleLogger {
    * @param value - Numeric value.
    */
   trackMetric(name: string, value: number, properties?: LogMetadata): void {
-    this.appInsights.trackMetric({
+    this.trackSafely(() => this.appInsights.trackMetric({
       name,
       value,
       properties: this.buildProperties(properties),
-    });
+    }));
   }
 
   /**
@@ -299,7 +307,7 @@ export class LoggerService extends ConsoleLogger {
     data?: string,
     properties?: LogMetadata,
   ): void {
-    this.appInsights.trackDependency({
+    this.trackSafely(() => this.appInsights.trackDependency({
       name,
       duration,
       success,
@@ -308,6 +316,6 @@ export class LoggerService extends ConsoleLogger {
       dependencyTypeName: dependencyType,
       data,
       properties: this.buildProperties(properties),
-    });
+    }));
   }
 }
