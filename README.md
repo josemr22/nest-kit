@@ -14,6 +14,7 @@ Install only the Azure peer dependencies you actually use:
 npm install applicationinsights          # LoggerModule
 npm install @azure/storage-blob          # StorageModule
 npm install @azure/service-bus           # ServiceBusModule
+npm install @azure/identity              # ServiceBusModule (only for Entra ID auth)
 ```
 
 ---
@@ -190,7 +191,20 @@ export class MediaService {
 
 Wraps Azure Service Bus as a **message producer**. Senders are cached per queue/topic and closed gracefully on module destroy.
 
-### Setup
+### Authentication
+
+Configure the module with **one** of two strategies:
+
+| Option | Auth | Requires |
+|--------|------|----------|
+| `fullyQualifiedNamespace` | Microsoft Entra ID (no keys) | `@azure/identity` + a role assignment (`Azure Service Bus Data Sender`) |
+| `connectionString` | SAS key | — |
+
+When both are provided, `fullyQualifiedNamespace` takes precedence.
+
+#### Setup — Entra ID (recommended)
+
+No access keys. Locally, `DefaultAzureCredential` uses your `az login` session; in Azure, it uses the resource's managed identity.
 
 ```ts
 // app.module.ts
@@ -202,12 +216,34 @@ import { ServiceBusModule } from '@lightsoft-pe/nest-kit';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        connectionString: config.get('SERVICE_BUS_CONNECTION_STRING'),
+        // e.g. my-namespace.servicebus.windows.net
+        fullyQualifiedNamespace: config.get('SERVICE_BUS_NAMESPACE'),
       }),
     }),
   ],
 })
 export class AppModule {}
+```
+
+Pass a custom `credential` to override the default `DefaultAzureCredential`:
+
+```ts
+useFactory: (config: ConfigService) => ({
+  fullyQualifiedNamespace: config.get('SERVICE_BUS_NAMESPACE'),
+  credential: new ManagedIdentityCredential(),
+}),
+```
+
+#### Setup — SAS connection string
+
+```ts
+ServiceBusModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => ({
+    connectionString: config.get('SERVICE_BUS_CONNECTION_STRING'),
+  }),
+}),
 ```
 
 ### Usage
