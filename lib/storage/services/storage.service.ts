@@ -113,8 +113,10 @@ export class StorageService {
    * Generates a read-only Shared Access Signature (SAS) URL for temporary blob access.
    * Useful for granting time-limited access to blobs in private containers.
    *
-   * **Requires** the module to be configured with `storageAccountName` + `storageAccountKey`.
-   * Does not work with connection strings that use SAS tokens or Managed Identity.
+   * **Requires** shared key auth (`storageAccountName` + `storageAccountKey`, or a
+   * connection string containing the account key). Not available with Entra ID
+   * (`DefaultAzureCredential`) — generating a SAS under Entra ID needs a user
+   * delegation key, which this method does not implement.
    *
    * @param containerName - Container where the blob lives.
    * @param blobName - Blob name (use the value returned by upload methods).

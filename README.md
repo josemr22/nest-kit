@@ -109,9 +109,21 @@ export class UsersService {
 
 ## StorageModule
 
-Wraps Azure Blob Storage. Supports connection string or account name + key.
+Wraps Azure Blob Storage. Authenticate with **one** of three strategies:
 
-### Setup
+| Option | Auth | Requires |
+|--------|------|----------|
+| `storageAccountName` (alone or + `credential`) | Microsoft Entra ID (no keys) | `@azure/identity` + a role (`Storage Blob Data Contributor`) |
+| `storageAccountName` + `storageAccountKey` | Shared key | — |
+| `connectionString` | SAS / account key | — |
+
+> `generateSasUrl()` needs shared key auth and is **not** available under Entra ID.
+> All other operations work with any strategy, and the public URLs returned by
+> uploads never require a SAS.
+
+### Setup — Entra ID (recommended)
+
+No access keys. Locally, `DefaultAzureCredential` uses your `az login` session; in Azure, the resource's managed identity.
 
 ```ts
 // app.module.ts
@@ -123,13 +135,26 @@ import { StorageModule } from '@lightsoft-pe/nest-kit';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        connectionString: config.get('AZURE_STORAGE_CONNECTION_STRING'),
-        // or: { storageAccountName: '...', storageAccountKey: '...' }
+        storageAccountName: config.get('AZURE_STORAGE_ACCOUNT'),
+        // optional: credential: new ManagedIdentityCredential(),
       }),
     }),
   ],
 })
 export class AppModule {}
+```
+
+### Setup — shared key / connection string
+
+```ts
+StorageModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => ({
+    connectionString: config.get('AZURE_STORAGE_CONNECTION_STRING'),
+    // or: { storageAccountName: '...', storageAccountKey: '...' }
+  }),
+}),
 ```
 
 ### Usage
